@@ -1,0 +1,24 @@
+{
+  "buildCommand": "echo no build step",
+  "outputDirectory": ".",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/v1/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/tollgate/:path*",
+      "destination": "/api/index"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/tollgate/settle",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

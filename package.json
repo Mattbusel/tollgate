@@ -1,0 +1,33 @@
+{
+  "name": "tollgate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HTTP 402 micropayment channels for AI agents on NEAR: lock a budget once, pay every call with an off-chain signed voucher, settle once on chain.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Matthew Busel",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run test:rust && npm run test:node",
+    "test:rust": "cargo test",
+    "test:node": "node --test \"test/*.test.mjs\"",
+    "setup": "node scripts/setup.mjs",
+    "demo": "node scripts/demo.mjs",
+    "seller": "node server/index.mjs",
+    "dashboard": "node scripts/serve-dashboard.mjs",
+    "mcp": "node src/agent/mcp.mjs",
+    "tollgate": "node src/agent/cli.mjs"
+  },
+  "bin": {
+    "tollgate": "src/agent/cli.mjs",
+    "tollgate-mcp": "src/agent/mcp.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "near-api-js": "7.4.0",
+    "zod": "4.6.7"
+  }
+}

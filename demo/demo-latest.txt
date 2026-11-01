@@ -1,0 +1,111 @@
+
+=== 0. Testnet accounts and contract (idempotent setup via the public faucet) ===
+contract channels.tollgate-busel.testnet  https://testnet.nearblocks.io/address/channels.tollgate-busel.testnet
+seller   seller.tollgate-busel.testnet
+agent    tollgate-agent-busel.testnet
+balances before: agent 9.3834 NEAR, seller 1.0977 NEAR, contract 3.0042 NEAR
+
+=== 1. Start the seller: demo data API behind Tollgate prices ===
+seller API on http://127.0.0.1:8402 (settler running, auto thresholds off so the demo settles explicitly)
+  /v1/quakes       0.001 NEAR  Recent earthquakes worldwide from the USGS FDSN event API
+  /v1/complaints   0.002 NEAR  Newest CFPB consumer complaints, filterable by company and product
+  /v1/sec/facts    0.003 NEAR  Latest annual headline financials (revenue, net income, assets, cash, R&D) from SEC EDGAR XBRL
+
+unpaid request -> HTTP 402
+  x-tollgate-price: 1000000000000000000000 yoctoNEAR, x-tollgate-contract: channels.tollgate-busel.testnet
+  accepts[0]: scheme=near-channel network=near-testnet payTo=seller.tollgate-busel.testnet
+  voucher format: tollgate:v1:{contract}:{channel_id}:{cumulative_yocto}:{nonce}
+
+=== 2. Agent pays 200 calls through one channel ===
+agent limits: budget 1 NEAR, max 0.01 NEAR per call, only contract channels.tollgate-busel.testnet
+first call hit 402, client opened channel 2 with 1 NEAR (dispute window 20 s):
+  open_channel: OK
+    tx https://testnet.nearblocks.io/txns/CNe7RjDEN4aL6Y4sywRtEA7wnMSHDWj86EcxmqhWD9Ka
+    gas burnt 2.397 Tgas, fee 0.00021733 NEAR
+  storage fee kept by the contract for the channel record: 0.002900 NEAR (NEAR storage staking, 290 bytes)
+  sample data: M2.8 59 km S of Whites City, New Mexico (USGS Earthquake Hazards Program, FDSN event API)
+  50 calls paid, cumulative 0.070 NEAR, voucher nonce 50
+  100 calls paid, cumulative 0.140 NEAR, voucher nonce 100
+  150 calls paid, cumulative 0.210 NEAR, voucher nonce 150
+  200 calls paid, cumulative 0.280 NEAR, voucher nonce 200
+
+200 paid calls done. Seller holds the newest voucher: cumulative 0.2800 NEAR at nonce 200.
+  wall time for calls 2..200: 6.5 s, median 7 ms per call (includes the upstream public API, cached for 60 s)
+  seller voucher verification (ed25519, node:crypto): median 160.3 us, mean 161.5 us
+
+=== 3. Proof that no transaction happened per call ===
+  agent access key nonce: 275767233000211 before, 275767233000212 after open_channel, 275767233000212 after 200 calls  (+0 transactions for the calls)
+  seller access key nonce: 275767247000010 before, 275767247000010 after  (+0)
+  on-chain channel 2: settled 0.0000 NEAR, last_nonce 0, deposit 0.9971 NEAR
+
+=== 4. Seller settles once: one transaction for all calls ===
+  settle(channel 2, cumulative 0.2800 NEAR, nonce 200): OK
+    tx https://testnet.nearblocks.io/txns/ELEtSGQRPBE49JPi7bC65djfcKH6jGFZawg4UaUjpzgQ
+    gas burnt 3.228 Tgas, fee 0.00027813 NEAR
+  event: {"standard":"tollgate","version":"1.0.0","event":"channel_settled","data":[{"channel_id":"2","seller":"seller.tollgate-busel.testnet","paid":"280000000000000000000000","cumulative":"280000000000000000000000","nonce":"200","remaining":"717100000000000000000000"}]}
+  seller balance 1.097760 -> 1.377482 NEAR (+0.279721, after paying its own 0.000278 fee)
+  channel now: settled 0.2800, remaining 0.7171, last_nonce 200
+  seller receipts for this channel marked settled: 200
+
+=== 5. Attacks, each rejected by the contract on chain ===
+  replay the settled voucher: REJECTED TOLLGATE_REPLAY: nonce 200 is not above the last settled nonce 200
+    tx https://testnet.nearblocks.io/txns/A5nsLktKjRWFwhP2b761hn2zV4w2VxrKBbm9GkPdJtCK
+    gas burnt 2.102 Tgas, fee 0.00018792 NEAR
+  forged amount (+0.5 NEAR, old signature): REJECTED TOLLGATE_BAD_SIGNATURE: voucher signature does not match the channel key
+    tx https://testnet.nearblocks.io/txns/3dgSR5NYsTZGLTmwsRRNzZbx7ePimQmmWxPJ3r8jrTAj
+    gas burnt 2.104 Tgas, fee 0.00018808 NEAR
+  overspend voucher at the seller SDK: refused off chain: overspend
+  overspend (signed voucher for 1.9971 NEAR on a 0.9971 NEAR deposit): REJECTED TOLLGATE_OVERSPEND: voucher for 1997100000000000000000000 yoctoNEAR exceeds the channel deposit of 997100000000000000000000
+    tx https://testnet.nearblocks.io/txns/DenywqU8TKGC6CSgv2M5SHvPPvGGDrDiZRCwYi4JSAkJ
+    gas burnt 2.121 Tgas, fee 0.00018976 NEAR
+  channel unchanged: settled 0.2800, last_nonce 200
+
+=== 6. 20 more calls, then the agent closes unilaterally ===
+  newest voucher now: cumulative 0.3000 NEAR at nonce 220 (unsettled: 0.0200 NEAR)
+  agent start_close: OK
+    tx https://testnet.nearblocks.io/txns/96WmaxiGaWi555Sym7P4hXW3tNQTqfL9hLd12DY7pDJi
+    gas burnt 2.289 Tgas, fee 0.00020659 NEAR
+  agent finalize right away: REJECTED TOLLGATE_DISPUTE_WINDOW: the seller can still settle for 17 more seconds
+    tx https://testnet.nearblocks.io/txns/317b82fusRoF679rsvZAasWCFS8tEJiMsKojs9YHf6Au
+    gas burnt 1.832 Tgas, fee 0.00016089 NEAR
+  waiting for the seller's settler to notice the close and settle inside the 20 s window...
+  seller settled during the dispute window: https://testnet.nearblocks.io/txns/E2Udb6TuoCfMXptfzf6NbAHWVY85qQNVhtEunRQ6FnDt
+    gas burnt 3.228 Tgas, fee 0.00027819 NEAR
+  dispute window ends in 18 s; waiting
+  agent finalize after the window: OK
+    tx https://testnet.nearblocks.io/txns/FZX41mPThX1ZuZ2Bb3gSaoHAfRas4cQi6ZCUnSFfSqtZ
+    gas burnt 2.931 Tgas, fee 0.00024846 NEAR
+  refund to agent: 0.697100 NEAR; agent balance 8.382895 -> 9.079746
+  final channel: status Closed, deposit 0.9971, settled 0.3000, refunded 0.6971, settlements 2
+  agent receipt log: 220 receipts in state/demo-agent-1793548215550/receipts.jsonl
+      20 receipts settled by E2Udb6TuoCfMXptfzf6NbAHWVY85qQNVhtEunRQ6FnDt
+     200 receipts settled by ELEtSGQRPBE49JPi7bC65djfcKH6jGFZawg4UaUjpzgQ
+  newest receipt: {"ts":"2026-11-01T15:50:43.962Z","url":"http://127.0.0.1:8402/v1/quakes?min_magnitude=5&hours=72&limit=5","method":"GET","status":200,"seller":"seller.tollgate-busel.testnet","contract":"channels.tollgate-busel.testnet","channel_id":"2","price":"1000000000000000000000","price_near":"0.001000","cumulative":"300000000000000000000000","nonce":"220","settlement_tx":"E2Udb6TuoCfMXptfzf6NbAHWVY85qQNVhtEunRQ6FnDt","description":"Recent earthquakes worldwide from the USGS FDSN event API","settled":true}
+
+=== 7. Balances before and after the channel lifecycle ===
+  agent    9.383480 -> 9.079746 NEAR  (-0.303733)
+  seller   1.097760 -> 1.396638 NEAR  (+0.298877)
+  contract 3.004237 -> 3.007137 NEAR  (+0.002900)
+  the seller earned 0.300000 NEAR for 220 calls; the agent got 0.697100 NEAR back
+
+=== 8. Baseline: the same 200 calls paid as plain per-call NEAR transfers ===
+  50 transfers sent (98 s)
+  100 transfers sent (198 s)
+  150 transfers sent (300 s)
+  200 transfers sent (403 s)
+  200/200 transfers succeeded; total gas 89.273 Tgas, total fees 0.00892730 NEAR, 403.0 s, median 1997 ms per payment
+    e.g. https://testnet.nearblocks.io/txns/J5Kjp1NtTnqKJX4k4rjnTVKrALCnpgsZF9hKtM2TLrC7
+    e.g. https://testnet.nearblocks.io/txns/Eyx6X9NciB9ZrFKohdK9Kiq6123Qzwqf8RCsSSMLwK1W
+    e.g. https://testnet.nearblocks.io/txns/ATsYxXuTts6r5ohxYnHP98WTxhgrquySXHyes74DoBGG
+
+=== 9. Cost comparison (all numbers measured on testnet in this run) ===
+                                                   txs  gas (Tgas)  tx fees (NEAR)
+  1 settlement covering 200 calls                    1       3.228      0.00027813
+  200 per-call transfers                           200      89.273      0.00892730
+  full channel lifecycle, 220 calls                  5      14.073      0.00122872
+
+  gas: one settlement 3.228 Tgas vs 200 transfers 89.273 Tgas (27.7x).
+  gas: whole lifecycle (open, settle, settle2, start_close, finalize) 14.073 Tgas vs 89.273 Tgas (6.3x).
+  money: lifecycle tx fees 0.001228 + channel storage 0.002900 = 0.004128 NEAR vs 0.008927 NEAR of transfer fees.
+  break-even: storage plus lifecycle fees equal about 93 per-call transfers; past that point each extra call adds no chain cost until the next settlement.
+  latency per paid call: 7 ms median with a voucher (including the upstream API) vs 1997 ms median for an on-chain transfer.

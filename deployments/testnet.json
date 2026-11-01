@@ -1,0 +1,25 @@
+{
+  "network": "testnet",
+  "rpc": "https://test.rpc.fastnear.com",
+  "contract": "channels.tollgate-busel.testnet",
+  "contract_code_hash": "2ANyRzxbZF3mXMpp5EqwDUWq6DoeuyPCDnYHcRKQmQqj",
+  "operator": "tollgate-busel.testnet",
+  "seller": "seller.tollgate-busel.testnet",
+  "agent": "tollgate-agent-busel.testnet",
+  "config": {
+    "voucher_domain": "tollgate:v1",
+    "min_dispute_window_sec": "15",
+    "max_expiry_sec": "2592000",
+    "min_channel_deposit": "10000000000000000000000"
+  },
+  "setup_txs": {
+    "create_contract": "6Eoav3TNQ1yQvcFW1s6rcmDVPYBbQkcHBbBWJKaDAeYA",
+    "create_seller": "93qzAJcCsdq2Ph995Cszc9WQxXA7hMciJPHFuMiBtnTA",
+    "deploy": "FHcP4UiVCR93FzGL7QGWctz4tQQYb4U9JRQNmAQew6Jx"
+  },
+  "explorer": {
+    "contract": "https://testnet.nearblocks.io/address/channels.tollgate-busel.testnet",
+    "seller": "https://testnet.nearblocks.io/address/seller.tollgate-busel.testnet",
+    "agent": "https://testnet.nearblocks.io/address/tollgate-agent-busel.testnet"
+  }
+}

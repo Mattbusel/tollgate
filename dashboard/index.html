@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tollgate Channels</title>
+<meta name="description" content="Live state of Tollgate payment channels on NEAR testnet, read straight from public RPC, plus the seller's receipt feed.">
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #16181d; --muted: #646a75; --line: #e3e1da;
+    --accent: #0b7a5c; --accent-soft: #d9efe7; --warn: #a15c00; --bad: #b42318; --bar: #e9e7e0;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1114; --panel: #171a1f; --ink: #e9ebef; --muted: #9aa1ad; --line: #2a2f37;
+      --accent: #3ccf9e; --accent-soft: #143a2f; --warn: #e3a447; --bad: #ff7a6e; --bar: #262b33;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1114; --panel: #171a1f; --ink: #e9ebef; --muted: #9aa1ad; --line: #2a2f37;
+    --accent: #3ccf9e; --accent-soft: #143a2f; --warn: #e3a447; --bad: #ff7a6e; --bar: #262b33;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 18px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 15px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .sub { color: var(--muted); }
+  a { color: var(--accent); }
+  code, .mono { font-family: var(--mono); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .stat { padding: 12px 14px; }
+  .stat .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .panel { padding: 16px; margin-bottom: 18px; overflow: hidden; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr.sel td { background: var(--accent-soft); }
+  tbody tr { cursor: pointer; }
+  .bar { width: 120px; height: 8px; background: var(--bar); border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; }
+  .Open { color: var(--accent); } .Closing { color: var(--warn); } .Closed { color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, textarea, button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+  textarea { width: 100%; min-height: 70px; font-family: var(--mono); font-size: 12px; }
+  button { cursor: pointer; background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+  dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; font-family: var(--mono); font-size: 13px; }
+  .ok { color: var(--accent); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+  footer { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Tollgate channels</h1>
+    <span class="sub">HTTP 402 payment channels for AI agents on NEAR testnet</span>
+    <span class="sub" style="margin-left:auto"><span id="updated">loading</span> <button class="ghost" id="theme" title="Toggle theme">theme</button></span>
+  </header>
+
+  <div class="grid" id="stats"></div>
+
+  <div class="panel">
+    <h2>Channels <span class="muted mono" id="contract"></span></h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>id</th><th>owner (agent)</th><th>seller</th><th>deposit</th><th>settled</th><th></th><th>nonce</th><th>settlements</th><th>status</th><th>expires</th></tr></thead>
+        <tbody id="channels"><tr><td colspan="10" class="muted">reading the contract...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <h2>Channel detail</h2>
+      <div id="detail" class="muted">Pick a channel above.</div>
+    </div>
+    <div class="panel">
+      <h2>Verify a voucher on chain</h2>
+      <p class="muted" style="margin-top:0">Paste an <code>X-PAYMENT</code> header. The contract's <code>verify_voucher</code> view runs <code>env::ed25519_verify</code> against the channel key, for free.</p>
+      <textarea id="voucher" placeholder="eyJzY2hlbWUiOiJuZWFyLWNoYW5uZWwi..."></textarea>
+      <div class="row" style="margin-top:8px"><button id="verify">Verify</button><span id="verdict"></span></div>
+      <div id="vdetail" class="muted mono" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Seller receipt feed <span class="muted mono" id="sellerUrl"></span></h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>time</th><th>channel</th><th>resource</th><th>price</th><th>cumulative</th><th>nonce</th><th>verify</th><th>settled</th></tr></thead>
+        <tbody id="receipts"><tr><td colspan="8" class="muted">connecting to the seller...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    State comes from public NEAR testnet RPC (<span id="rpc" class="mono"></span>); nothing here signs anything.
+    URL options: <code>?contract=&lt;account&gt;&amp;seller=&lt;url&gt;&amp;rpc=&lt;url&gt;</code>.
+    Explorer: <a id="explorer" target="_blank" rel="noopener">nearblocks</a>.
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

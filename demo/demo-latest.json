@@ -1,0 +1,85 @@
+{
+  "started_at": "2026-11-01T15:50:13.945Z",
+  "network": "testnet",
+  "txs": {
+    "open_channel": "CNe7RjDEN4aL6Y4sywRtEA7wnMSHDWj86EcxmqhWD9Ka",
+    "settle": "ELEtSGQRPBE49JPi7bC65djfcKH6jGFZawg4UaUjpzgQ",
+    "start_close": "96WmaxiGaWi555Sym7P4hXW3tNQTqfL9hLd12DY7pDJi",
+    "settle_in_dispute_window": "E2Udb6TuoCfMXptfzf6NbAHWVY85qQNVhtEunRQ6FnDt",
+    "finalize": "FZX41mPThX1ZuZ2Bb3gSaoHAfRas4cQi6ZCUnSFfSqtZ"
+  },
+  "rejected": {
+    "replay": {
+      "tx": "A5nsLktKjRWFwhP2b761hn2zV4w2VxrKBbm9GkPdJtCK",
+      "error": "TOLLGATE_REPLAY: nonce 200 is not above the last settled nonce 200"
+    },
+    "forged": {
+      "tx": "3dgSR5NYsTZGLTmwsRRNzZbx7ePimQmmWxPJ3r8jrTAj",
+      "error": "TOLLGATE_BAD_SIGNATURE: voucher signature does not match the channel key"
+    },
+    "overspend": {
+      "tx": "DenywqU8TKGC6CSgv2M5SHvPPvGGDrDiZRCwYi4JSAkJ",
+      "error": "TOLLGATE_OVERSPEND: voucher for 1997100000000000000000000 yoctoNEAR exceeds the channel deposit of 997100000000000000000000"
+    },
+    "finalize_early": {
+      "tx": "317b82fusRoF679rsvZAasWCFS8tEJiMsKojs9YHf6Au",
+      "error": "TOLLGATE_DISPUTE_WINDOW: the seller can still settle for 17 more seconds"
+    }
+  },
+  "measurements": {
+    "open": {
+      "gas": "2396521243117",
+      "fee": "217333868061700000000"
+    },
+    "storage_fee": "2900000000000000000000",
+    "calls": {
+      "count": 200,
+      "wall_ms": 6546,
+      "median_ms": 7,
+      "verify_us_median": 160.3,
+      "verify_us_mean": 161.52449999999988
+    },
+    "per_call_txs": 0,
+    "settle": {
+      "gas": "3227722197444",
+      "fee": "278135707244400000000"
+    },
+    "start_close": {
+      "gas": "2289109250412",
+      "fee": "206592668791200000000"
+    },
+    "settle2": {
+      "gas": "3228325368004",
+      "fee": "278196024300400000000"
+    },
+    "finalize": {
+      "gas": "2930990875891",
+      "fee": "248462575089100000000"
+    },
+    "baseline": {
+      "count": 200,
+      "ok": 200,
+      "gas": "89273025000000",
+      "fee": "8927302500000000000000",
+      "wall_ms": 402959,
+      "median_ms": 1997,
+      "sample_txs": [
+        "J5Kjp1NtTnqKJX4k4rjnTVKrALCnpgsZF9hKtM2TLrC7",
+        "Eyx6X9NciB9ZrFKohdK9Kiq6123Qzwqf8RCsSSMLwK1W",
+        "ATsYxXuTts6r5ohxYnHP98WTxhgrquySXHyes74DoBGG"
+      ]
+    }
+  },
+  "comparison": {
+    "storage_fee": "2900000000000000000000",
+    "settle_gas": "3227722197444",
+    "transfers_gas": "89273025000000",
+    "lifecycle_gas": "14072668934868",
+    "settle_fee": "278135707244400000000",
+    "transfers_fee": "8927302500000000000000",
+    "lifecycle_fee": "1228720843486800000000"
+  },
+  "channel_id": "2",
+  "contract": "channels.tollgate-busel.testnet",
+  "finished_at": "2026-11-01T15:57:56.771Z"
+}
